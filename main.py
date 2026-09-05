@@ -2,7 +2,7 @@ from ultralytics import YOLO
 from paddleocr import PaddleOCR
 import cv2
 import os
-import glob
+import glob 
 
 # Load models
 model = YOLO("models/best.pt")
