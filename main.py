@@ -2,48 +2,60 @@ from ultralytics import YOLO
 from paddleocr import PaddleOCR
 import cv2
 import os
+import glob
 
 # Load models
 model = YOLO("models/best.pt")
 ocr = PaddleOCR(lang="en")
 
-# Read car image
-image = cv2.imread("data/car.jpg")
-
-# Detect license plate
-results = model(image, conf=0.4)
-
 # Create results folder
 os.makedirs("results", exist_ok=True)
 
-count = 0
+# Get all images from data folder
+image_files = glob.glob("data/*.jpg") + glob.glob("data/*.jpeg") + glob.glob("data/*.png")
 
-for result in results:
-    for box in result.boxes:
+# Process every image
+for image_path in image_files:
 
-        # Get plate coordinates
-        x1, y1, x2, y2 = map(int, box.xyxy[0])
+    print("\nProcessing:", image_path)
 
-        # Crop plate
-        plate = image[y1:y2, x1:x2]
+    # Read image
+    image = cv2.imread(image_path)
 
-        count += 1
-        output_path = f"results/plate_{count}.jpg"
+    # Detect license plate
+    results = model(image, conf=0.4)
 
-        # Save cropped plate
-        cv2.imwrite(output_path, plate)
+    count = 0
 
-        print(f"License plate saved: {output_path}")
+    for result in results:
+        for box in result.boxes:
 
-        # OCR
-        ocr_result = ocr.predict(output_path)
+            # Get plate coordinates
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
 
-        for res in ocr_result:
-            print("Plate:", res["rec_texts"][0])
-            print(
-                "Confidence:",
-                round(res["rec_scores"][0] * 100, 2),
-                "%"
-            )
+            # Crop plate
+            plate = image[y1:y2, x1:x2]
 
-print(f"Total plates detected: {count}")
+            count += 1
+            output_path = f"results/plate_{count}.jpg"
+
+            # Save cropped plate
+            cv2.imwrite(output_path, plate)
+
+            print(f"License plate saved: {output_path}")
+
+            # OCR
+            ocr_result = ocr.predict(output_path)
+
+            for res in ocr_result:
+                if len(res["rec_texts"]) > 0:
+                    print("Plate:", res["rec_texts"][0])
+                    print(
+                        "Confidence:",
+                        round(res["rec_scores"][0] * 100, 2),
+                        "%"
+                    )
+
+    print(f"Total plates detected: {count}")
+
+print("\nFinished processing all images!")
