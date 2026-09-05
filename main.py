@@ -8,7 +8,7 @@ model = YOLO("models/best.pt")
 ocr = PaddleOCR(lang="en")
 
 # Read car image
-image = cv2.imread("data/bike.jpg")
+image = cv2.imread("data/car.jpg")
 
 # Detect license plate
 results = model(image, conf=0.4)
