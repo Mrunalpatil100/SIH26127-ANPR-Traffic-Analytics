@@ -1,3 +1,4 @@
+
 from ultralytics import YOLO
 from paddleocr import PaddleOCR
 import cv2
@@ -12,7 +13,13 @@ ocr = PaddleOCR(lang="en")
 os.makedirs("results", exist_ok=True)
 
 # Get all images from data folder
-image_files = glob.glob("data/*.jpg") + glob.glob("data/*.jpeg") + glob.glob("data/*.png")
+image_files = (
+    glob.glob("data/*.jpg")
+    + glob.glob("data/*.jpeg")
+    + glob.glob("data/*.png")
+)
+
+plate_number = 0
 
 # Process every image
 for image_path in image_files:
@@ -21,6 +28,10 @@ for image_path in image_files:
 
     # Read image
     image = cv2.imread(image_path)
+
+    if image is None:
+        print("Could not read image")
+        continue
 
     # Detect license plate
     results = model(image, conf=0.4)
@@ -37,7 +48,9 @@ for image_path in image_files:
             plate = image[y1:y2, x1:x2]
 
             count += 1
-            output_path = f"results/plate_{count}.jpg"
+            plate_number += 1
+
+            output_path = f"results/plate_{plate_number}.jpg"
 
             # Save cropped plate
             cv2.imwrite(output_path, plate)
@@ -48,11 +61,15 @@ for image_path in image_files:
             ocr_result = ocr.predict(output_path)
 
             for res in ocr_result:
-                if len(res["rec_texts"]) > 0:
-                    print("Plate:", res["rec_texts"][0])
+
+                texts = res.get("rec_texts", [])
+                scores = res.get("rec_scores", [])
+
+                if texts and scores:
+                    print("Plate:", texts[0])
                     print(
                         "Confidence:",
-                        round(res["rec_scores"][0] * 100, 2),
+                        round(scores[0] * 100, 2),
                         "%"
                     )
 
